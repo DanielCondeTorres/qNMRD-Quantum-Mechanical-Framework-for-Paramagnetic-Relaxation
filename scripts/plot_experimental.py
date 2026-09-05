@@ -33,7 +33,7 @@ def generate_experimental_comparison():
     D_MHz = 600.0
     E_MHz = 90.0
     r_angstrom = 3.1
-    tau_c_ps = 110.0
+    tau_c_ps = 80.0
     
     r1_quantum = run_quantum_nmrd_pipeline(
         B0_array_MHz=B0_MHz_sweep,
@@ -41,10 +41,12 @@ def generate_experimental_comparison():
         r_angstrom=r_angstrom, tau_c_ps=tau_c_ps
     )
     
-    # 3. Calculate Classical SBM for contrast
     B0_T_sweep = B0_MHz_sweep / 42.5774
+    from qnmrd.dynamics.outer_sphere import compute_R1_outer_sphere
     sbm_data = nmrd_sbm(B0_T_sweep, S, r_angstrom*1e-10, tau_c_ps*1e-12, proton_freq=False)
-    r1_sbm = sbm_data['r1']
+    r1_sbm_IS = sbm_data['r1']
+    r1_sbm_OS = compute_R1_outer_sphere(B0_T_sweep, S, d_A=3.6, D_rel=2.2e-9, C_mM=1.0)
+    r1_sbm = r1_sbm_IS + r1_sbm_OS
     
     # 4. Define Experimental Mock Data (characteristic for Gd-DOTA at 298K)
     # References: Platas-Iglesias (2016), Helm (2006).

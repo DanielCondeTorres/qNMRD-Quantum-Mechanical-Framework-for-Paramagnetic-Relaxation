@@ -29,7 +29,7 @@ from qnmrd.spin.hamiltonian import SpinHamiltonian
 from qnmrd.dynamics.redfield import RedfieldR1
 from qnmrd.vqe.mapping import spin_to_qubit_hamiltonian
 from qnmrd.vqe.solver import solve_qubit_hamiltonian
-
+from qnmrd.dynamics.outer_sphere import compute_R1_outer_sphere
 
 def run_quantum_nmrd_pipeline(B0_array_MHz, S, D_MHz, E_MHz, r_angstrom, tau_c_ps):
     print("======================================================")
@@ -60,29 +60,30 @@ def run_quantum_nmrd_pipeline(B0_array_MHz, S, D_MHz, E_MHz, r_angstrom, tau_c_p
         # ---------------------------------------------------------
         # PHASE 1: MAP TO QUBITS
         # ---------------------------------------------------------
-        # For S=7/2 (8 states), this maps exactly to 3 qubits.
-        # For S=5/2 (6 states), it maps to 3 qubits with a penalty on the top 2 states.
         pauli_op = spin_to_qubit_hamiltonian(ham, B0_T, D_MHz, E_MHz, gamma_e_MHz_T)
         num_qubits = pauli_op.num_qubits
         
         # ---------------------------------------------------------
         # PHASE 2: QUANTUM EIGENSOLVER
         # ---------------------------------------------------------
-        # Solve the mapped Pauli string Hamiltonian.
-        # In a real QC, this uses VQD or SSVQE. Here we use the exact NumPy solver
-        # to prove the isomorphism.
         q_evals, q_evecs = solve_qubit_hamiltonian(pauli_op, num_states=ham.dim)
         
         # ---------------------------------------------------------
-        # PHASE 3: OPEN-SYSTEM DYNAMICS (REDFIELD)
+        # PHASE 3: OPEN-SYSTEM DYNAMICS (REDFIELD IS + HWANG-FREED OS)
         # ---------------------------------------------------------
-        # Pass the quantum-derived eigenspectrum to calculate relaxation
-        R1 = rf.compute_R1(B0_T, D_MHz, E_MHz, gamma_e_MHz_T, 
+        # 1. Inner Sphere (IS) relaxivity (mM⁻¹s⁻¹)
+        R1_IS = rf.compute_R1(B0_T, D_MHz, E_MHz, gamma_e_MHz_T, 
                            quantum_evals=q_evals, quantum_evecs=q_evecs)
+        r1_IS = R1_IS / 55500.0  # Normalize to relaxivity assuming [H2O] ~ 55.5 M
         
-        r1 = R1 / 55500.0  # Normalize to relaxivity (mM⁻¹s⁻¹) assuming water concentration ~55.5 M
-        R1_results.append(r1)
-        print(f"ν_H = {freq_H_MHz:5.1f} MHz | B0 = {B0_T:6.4f} T | Qubits: {num_qubits} | r1_Quantum = {r1:5.3f} mM⁻¹s⁻¹")
+        # 2. Outer Sphere (OS) relaxivity (mM⁻¹s⁻¹)
+        r1_OS = compute_R1_outer_sphere(B0_T, S, d_A=3.6, D_rel=2.2e-9, C_mM=1.0)
+        
+        # 3. Total relaxivity
+        r1_tot = r1_IS + r1_OS
+        R1_results.append(r1_tot)
+        
+        print(f"ν_H = {freq_H_MHz:5.1f} MHz | B0 = {B0_T:6.4f} T | Qubits: {num_qubits} | r1_IS = {r1_IS:5.3f} | r1_OS = {r1_OS:5.3f} | r1_Tot = {r1_tot:5.3f}")
 
     t1 = time.time()
     print(f"\n✅ Quantum Pipeline completed in {t1-t0:.2f} seconds.\n")
