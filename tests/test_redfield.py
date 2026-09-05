@@ -16,6 +16,7 @@ from qnmrd.spin.hamiltonian import SpinHamiltonian
 from qnmrd.dynamics.spectral_density import J_BPP
 from qnmrd.dynamics.redfield import RedfieldR1
 from qnmrd.validation.sbm import R1_sbm
+from qnmrd.validation.zeeman_limit import zeeman_limit_errors
 
 
 class TestSpectralDensity(unittest.TestCase):
@@ -110,6 +111,13 @@ class TestRedfieldVsSBM(unittest.TestCase):
             R1 = rf.compute_R1(B0, D_MHz=800.0, E_MHz=200.0)
             self.assertGreater(R1, 0.0,
                                f"R1 ≤ 0 at B0={B0}T")
+
+    def test_zeeman_limit_benchmark_over_grid(self):
+        """The independent SBM oracle is recovered over the release grid."""
+        fields = np.array([0.1, 1.0, 2.0, 10.0])
+        for spin in (2.5, 3.5):
+            benchmark = zeeman_limit_errors(spin, fields)
+            self.assertLess(float(benchmark["relative_error"].max()), 0.01)
 
 
 if __name__ == '__main__':

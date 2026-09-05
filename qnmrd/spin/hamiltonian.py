@@ -51,6 +51,44 @@ class SpinHamiltonian:
         term_E = E_MHz * (self.Sx @ self.Sx - self.Sy @ self.Sy)
         return term_D + term_E
 
+    def zfs_from_tensor(self, zfs_tensor_MHz, atol=1e-10):
+        """Return a second-order ZFS Hamiltonian from a Cartesian tensor.
+
+        ``zfs_tensor_MHz`` is a real, symmetric, traceless 3-by-3 tensor in
+        the laboratory frame.  The convention is
+
+        ``H_ZFS = sum_ij D_ij {S_i, S_j}/2``.
+
+        Thus the conventional principal-axis parameters used by
+        :meth:`zfs_second_order` correspond to
+        ``diag(E-D/3, -E-D/3, 2D/3)``.  This method makes the orientation of
+        the molecular ZFS principal axes explicit instead of implicitly
+        aligning them with the laboratory field.
+        """
+        tensor = np.asarray(zfs_tensor_MHz, dtype=float)
+        if tensor.shape != (3, 3):
+            raise ValueError("zfs_tensor_MHz must have shape (3, 3).")
+        if not np.allclose(tensor, tensor.T, atol=atol):
+            raise ValueError("zfs_tensor_MHz must be symmetric.")
+        if not np.isclose(np.trace(tensor), 0.0, atol=atol):
+            raise ValueError("zfs_tensor_MHz must be traceless.")
+
+        operators = (self.Sx, self.Sy, self.Sz)
+        h_zfs = np.zeros((self.dim, self.dim), dtype=complex)
+        for i, op_i in enumerate(operators):
+            for j, op_j in enumerate(operators):
+                h_zfs += 0.5 * tensor[i, j] * (op_i @ op_j + op_j @ op_i)
+        return h_zfs
+
+    @staticmethod
+    def zfs_principal_tensor(D_MHz, E_MHz=0.0):
+        """Return the traceless ZFS tensor in its principal-axis frame."""
+        return np.diag([
+            E_MHz - D_MHz / 3.0,
+            -E_MHz - D_MHz / 3.0,
+            2.0 * D_MHz / 3.0,
+        ])
+
     def get_H0(self, B0_T, gamma_MHz_T, D_MHz, E_MHz=0.0):
         """Full static electronic Hamiltonian H0 = H_Z + H_ZFS  [MHz]"""
         return self.zeeman(B0_T, gamma_MHz_T) + self.zfs_second_order(D_MHz, E_MHz)

@@ -1,8 +1,8 @@
 # qNMRD: Quantum-Mechanical Framework for Paramagnetic Relaxation Dispersion
 
-**A generalized Redfield approach to predict Nuclear Magnetic Relaxation Dispersion (NMRD) profiles for high-spin transition metal and lanthanide complexes (e.g., Mn(II), Gd(III)) incorporating Zero-Field Splitting (ZFS).**
+**An open, static-ZFS-resolved Redfield implementation for exploring Nuclear Magnetic Relaxation Dispersion (NMRD) of high-spin transition-metal and lanthanide spin systems.**
 
-This repository is designed to bridge the gap between microscopic quantum chemistry (and future quantum computing architectures) and macroscopic NMR relaxation observables. It provides a physically rigorous alternative to the phenomenological Solomon–Bloembergen–Morgan (SBM) theory, particularly in the low magnetic field regime where the Zeeman limit breaks down.
+This repository provides a reproducible static-ZFS kernel and an exact qubit encoding for the electronic spin space. It is not yet a parameter-free molecular prediction workflow: experimental validation, transient-ZFS/electronic-relaxation physics, hydration and exchange inputs must be provided for a quantitative comparison with a real complex.
 
 ---
 
@@ -17,7 +17,9 @@ When ZFS is significant ($D, E \sim \text{GHz}$), the electronic states are no l
 ### The Solution: ZFS-Resolved Redfield Theory
 This framework directly constructs the total electronic Hamiltonian ($H_0 = H_\text{Zeeman} + H_\text{ZFS}$) and performs exact diagonalization. The nuclear longitudinal relaxation rate ($R_1$) is then computed directly from the secular Redfield master equation, evaluated over the exact electronic eigenbasis.
 
-This allows us to predict the low-field plateau and the transition into the high-field SBM limit seamlessly, without arbitrarily modifying the spectral density functions.
+The implementation is benchmarked against the independently coded SBM formula in the $D=E=0$ limit. Its low-field behavior for finite ZFS is a model prediction that must be tested against traceable experimental data.
+
+The molecular ZFS tensor is not generically aligned with the magnetic field.  For a controlled orientational reference, `compute_nmrd_profile(..., orientation_model="static_average")` averages the tensor over a deterministic SO(3) grid. This is not a replacement for a solution-state Stochastic Liouville treatment, which must also describe rotational and transient-ZFS dynamics.
 
 ---
 
@@ -43,13 +45,13 @@ Currently, ZFS parameters ($D$ and $E$) are often treated as empirical fitting p
 
 Calculating the electronic structure of heavy, highly-correlated systems like Gd-DOTA requires multireference methods (e.g., CASSCF/NEVPT2), which scale exponentially on classical computers.
 
-We propose a quantum-computational bridge using the **Variational Quantum Eigensolver (VQE)**:
+The repository provides an exact Pauli mapping as a quantum-computational interface:
 1. The active-space molecular Hamiltonian is mapped to qubits.
-2. VQE computes the ground and low-lying excited states of the spin multiplet.
+2. A future VQE/VQD calculation could compute the ground and low-lying excited states of the spin multiplet.
 3. These quantum states are projected onto an effective spin Hamiltonian to extract the tensors $D$ and $E$.
 4. $D$ and $E$ are fed into this **qNMRD** Redfield module to predict the experimental NMRD profile.
 
-> A conceptual Qiskit implementation for mapping the effective spin Hamiltonian to a quantum circuit is provided in `scripts/vqe_demo.py`.
+> The released `qnmrd.vqe.solver` uses a classical exact NumPy eigensolver as its reference. `scripts/vqe_demo.py` is conceptual; it does not constitute hardware-VQE evidence or a quantum advantage claim.
 
 ---
 
@@ -77,6 +79,14 @@ The project utilizes `pytest` to validate the physics rigorously (e.g., verifyin
 ```bash
 pytest tests/ -v
 ```
+
+### Reproducing the no-fit SBM benchmark
+
+```bash
+python scripts/benchmark_zeeman_limit.py
+```
+
+The script writes a machine-readable comparison at `results/data/zeeman_limit.json` and fails if the ZFS-Redfield calculation differs from SBM by more than 1% when $D=E=0$. See [JCTC_READINESS.md](JCTC_READINESS.md) for the scientific validation and submission work that remains.
 
 ---
 

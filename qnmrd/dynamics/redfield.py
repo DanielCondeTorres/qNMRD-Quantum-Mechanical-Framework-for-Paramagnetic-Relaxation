@@ -91,7 +91,8 @@ class RedfieldR1:
         return self.gamma_I * B0_T
 
     def compute_R1(self, B0_T, D_MHz, E_MHz=0.0, gamma_e_MHz_T=-28024.95,
-                   quantum_evals=None, quantum_evecs=None):
+                   quantum_evals=None, quantum_evecs=None,
+                   zfs_tensor_MHz=None):
         """
         ZFS-resolved nuclear longitudinal relaxation rate R1 (s⁻¹).
 
@@ -140,6 +141,10 @@ class RedfieldR1:
         quantum_evals, quantum_evecs : ndarray, optional
             If provided, bypasses classical diagonalization and uses these
             quantum-derived eigenvalues and eigenvectors directly.
+        zfs_tensor_MHz : ndarray, optional
+            Real symmetric traceless 3-by-3 ZFS tensor in the laboratory
+            frame.  When supplied, it takes precedence over ``D_MHz`` and
+            ``E_MHz`` and enables an explicit molecular-orientation average.
 
         Returns
         -------
@@ -151,7 +156,11 @@ class RedfieldR1:
             evals_MHz = quantum_evals[:self.dimS]
             evecs = quantum_evecs[:self.dimS, :self.dimS]
         else:
-            H0 = self.ham.get_H0(B0_T, gamma_e_MHz_T, D_MHz, E_MHz)
+            if zfs_tensor_MHz is None:
+                H0 = self.ham.get_H0(B0_T, gamma_e_MHz_T, D_MHz, E_MHz)
+            else:
+                H0 = (self.ham.zeeman(B0_T, gamma_e_MHz_T)
+                      + self.ham.zfs_from_tensor(zfs_tensor_MHz))
             evals_MHz, evecs = self.ham.exact_diagonalization(H0)
 
         # --- 2. Boltzmann populations ---

@@ -1,0 +1,23 @@
+name: Scientific verification
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and test dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Run unit and physics-limit tests
+        run: python -m unittest discover -s tests -v
+      - name: Reproduce no-fit Zeeman-limit benchmark
+        run: python scripts/benchmark_zeeman_limit.py --output /tmp/zeeman_limit.json
