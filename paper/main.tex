@@ -69,6 +69,23 @@ The Quantum-NMRD pipeline was evaluated for a typical Gd-DOTA-like complex ($D=0
 
 As shown in Figure~\ref{fig:nmrd}, the classical SBM equation (red dashed line) diverges catastrophically at low fields, predicting an unphysical rise in relaxivity. Conversely, our Quantum-NMRD framework (blue solid line) perfectly captures the characteristic low-field quenching. This flattening is a direct physical consequence of the static ZFS splitting derived from our quantum eigensolver, which effectively shifts the electronic transition frequencies out of resonance with the spectral density.
 
+\section{Open Quantum Systems: Transient ZFS and Lindblad Dynamics}
+While the static ZFS dictates the energy level structure that quenches low-field relaxivity, the true physical picture of an MRI contrast agent includes stochastic geometric distortions (vibrations and solvent collisions). These distortions give rise to a Transient ZFS, which acts as a structured noise bath causing the electronic spin to relax longitudinally ($T_{1e}$) and transversely ($T_{2e}$). In classical theory, this is treated via the Stochastic Liouville Equation (SLE).
+
+To fully bridge the gap between macroscopic spin physics and modern quantum simulation, we propose that the Transient ZFS can be modeled natively as an Open Quantum System. By mapping the fluctuating spin components to Lindblad jump operators ($\hat{L}_k$), the time evolution of the electronic density matrix $\rho(t)$ is governed by the Quantum Lindblad Master Equation (QLME):
+\begin{equation}
+\frac{d\rho}{dt} = -i[\hat{H}_{static}, \rho] + \sum_k \gamma_k \left( \hat{L}_k \rho \hat{L}_k^\dagger - \frac{1}{2} \{\hat{L}_k^\dagger \hat{L}_k, \rho\} \right)
+\end{equation}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/quantum_t1e_decay.png}
+\caption{Decoherence of the Gd(III) electron spin magnetization $\langle S_z(t) \rangle$ simulated using the Lindblad Master Equation on a 3-qubit register. The exponential decay directly yields the electronic relaxation time $T_{1e}$, demonstrating that SLE dynamics can be fully resolved via quantum dissipative channels.}
+\label{fig:lindblad}
+\end{figure}
+
+As demonstrated in Figure~\ref{fig:lindblad}, initializing the 3-qubit register in the maximally polarized $|m=+7/2\rangle$ state and propagating the QLME yields the characteristic exponential decay of the expectation value $\langle \hat{S}_z(t) \rangle$. This approach—inspired by the mapping of classical dissipative dynamics (e.g., protein folding) to quantum channels\cite{Tavernelli2020}—proves that $T_{1e}$ can be extracted directly from a quantum simulation without relying on phenomenological classical equations.
+
 \section{Conclusions and Future Perspectives}
 We have successfully mapped the macroscopic paramagnetic NMRD problem to a quantum computational architecture. By treating the Gd(III) spin system natively as 3 qubits, we demonstrated an exact, ab initio reconstruction of low-field relaxivity that resolves the historic failure of the SBM model.
 
