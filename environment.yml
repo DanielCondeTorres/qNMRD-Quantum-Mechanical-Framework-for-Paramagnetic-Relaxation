@@ -1,0 +1,16 @@
+name: qnmrd_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10
+  - numpy>=1.23.0
+  - scipy>=1.10.0
+  - matplotlib>=3.7.0
+  - plotly>=5.14.0
+  - streamlit>=1.22.0
+  - pip
+  - pip:
+      - qiskit>=1.0.0
+      - qiskit-aer>=0.14.0
+      - qiskit-algorithms>=0.3.0
