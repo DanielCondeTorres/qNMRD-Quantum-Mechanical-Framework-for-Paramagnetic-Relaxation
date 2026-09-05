@@ -48,9 +48,10 @@ def solve_qubit_hamiltonian(pauli_op, num_states):
     evals = np.real(result.eigenvalues)
     
     # Extract the statevectors and stack them as columns
-    evecs = np.zeros((pauli_op.dim, num_states), dtype=complex)
+    dim = 2**pauli_op.num_qubits
+    evecs = np.zeros((dim, num_states), dtype=complex)
     for i, state in enumerate(result.eigenstates):
-        evecs[:, i] = state.to_matrix()
+        evecs[:, i] = np.asarray(state)
 
     # Ensure they are sorted by energy
     idx = np.argsort(evals)

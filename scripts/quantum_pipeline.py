@@ -80,8 +80,9 @@ def run_quantum_nmrd_pipeline(B0_array_MHz, S, D_MHz, E_MHz, r_angstrom, tau_c_p
         R1 = rf.compute_R1(B0_T, D_MHz, E_MHz, gamma_e_MHz_T, 
                            quantum_evals=q_evals, quantum_evecs=q_evecs)
         
-        R1_results.append(R1)
-        print(f"ν_H = {freq_H_MHz:5.1f} MHz | B0 = {B0_T:6.4f} T | Qubits: {num_qubits} | R1_Quantum = {R1:5.3f} mM⁻¹s⁻¹")
+        r1 = R1 / 55500.0  # Normalize to relaxivity (mM⁻¹s⁻¹) assuming water concentration ~55.5 M
+        R1_results.append(r1)
+        print(f"ν_H = {freq_H_MHz:5.1f} MHz | B0 = {B0_T:6.4f} T | Qubits: {num_qubits} | r1_Quantum = {r1:5.3f} mM⁻¹s⁻¹")
 
     t1 = time.time()
     print(f"\n✅ Quantum Pipeline completed in {t1-t0:.2f} seconds.\n")
